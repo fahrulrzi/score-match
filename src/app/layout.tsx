@@ -33,7 +33,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${poppins.variable} ${geistMono.variable} antialiased`}>
-        <div className="flex">
+        <div className="flex sticky top-0">
           <Navbar />
         </div>
         {children}

@@ -29,8 +29,8 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className=" border-gray-200 px-0 sm:px-32 w-screen">
-      <div className="max-w-screen-xl flex flex-wrap items-center p-4 sm:justify-start justify-between sm:gap-36">
+    <nav className="border-gray-200 px-0 sm:px-20 w-screen backdrop-blur-xs">
+      <div className="max-w-screen-xl flex flex-wrap items-center p-0 sm:justify-start justify-between sm:gap-36">
         <Link
           href="/"
           className="flex items-center space-x-3 rtl:space-x-reverse">
@@ -69,7 +69,7 @@ const Navbar: React.FC = () => {
         <div
           className={`${
             isMenuOpen ? "block" : "hidden"
-          } w-full md:block md:w-auto sm:mt-14`}
+          } w-full md:block md:w-auto sm:mt-6`}
           id="navbar-default">
           <ul className="font-medium flex flex-col gap-14  p-4 md:p-0 mt-4 border rounded-lg md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 ">
             <li>

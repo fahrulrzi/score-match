@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className=" h-screen overflow-hidden relative">
-      <div className="flex flex-col md:gap-6 md:p-16">
+    <div className=" h-full overflow-hidden relative">
+      <div className="flex flex-col md:gap-6 md:p-16 md:py-14">
         <div className="flex">
           <div className="font-bold text-black text-2xl">
             What We Provide You!
