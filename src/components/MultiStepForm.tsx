@@ -2,6 +2,8 @@
 
 import { CustomerRequest, submitForm } from "@/lib/Form";
 import { useEffect, useState } from "react";
+import GaugeChart from "./GaugeChart";
+import { useRouter } from "next/navigation";
 
 type Field = {
   name: string;
@@ -91,15 +93,15 @@ const steps: Step[] = [
       },
       {
         name: "income",
-        label: "Jumlah Penghasilan Bulanan(Juta)",
-        type: "number",
+        label: "Jumlah Penghasilan Bulanan",
+        type: "text",
         placeholder: "Masukkan penghasilan",
         required: true,
       },
       {
         name: "installment",
-        label: "Jumlah Cicilan Perbulan(Juta)",
-        type: "number",
+        label: "Jumlah Cicilan Perbulan",
+        type: "text",
         placeholder: "Masukkan cicilan",
         required: true,
       },
@@ -118,15 +120,15 @@ const steps: Step[] = [
       {
         name: "kreditBerjalan",
         label: "Jumlah Kredit Berjalan",
-        type: "number",
+        type: "text",
         placeholder: "Masukkan jumlah kredit berjalan",
         required: true,
       },
       {
         name: "jangkaWaktuKredit",
-        label: "Sisa Jangka Waktu Kredit Berjalan",
+        label: "Sisa Jangka Waktu Kredit Berjalan (Bulan)",
         type: "number",
-        placeholder: "Masukkan jangka waktu kredit berjalan",
+        placeholder: "Masukkan jangka waktu kredit berjalan (Bulan)",
         required: true,
       },
       {
@@ -138,8 +140,8 @@ const steps: Step[] = [
       },
       {
         name: "jangkaWaktuKreditDiajukan",
-        label: "Jangka Waktu Kredit Yang Diajukan",
-        type: "number",
+        label: "Jangka Waktu Kredit Yang Diajukan (Bulan)",
+        type: "text",
         placeholder: "Masukkan jangka waktu kredit yang diajukan",
         required: true,
       },
@@ -166,13 +168,63 @@ const steps: Step[] = [
   },
 ];
 
+interface customerResponse {
+  score: number;
+  status: string;
+  describe: string;
+}
+
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [showError, setShowErrors] = useState(false);
+  const [formattedValues, setFormattedValues] = useState<
+    Record<string, string>
+  >({});
+  const [scoreStatus, setScoreStatus] = useState<boolean>(false);
+  const [customerResponse, setCustomerResponse] = useState<customerResponse>({
+    score: 0,
+    status: "",
+    describe: "",
+  });
+
+  const router = useRouter();
+
+  const formatRupiah = (value: string): string => {
+    const number = value.replace(/[^0-9]/g, "");
+    if (!number) return "";
+    return Number(number).toLocaleString("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+  };
+
+  const parseRupiah = (value: string): string => {
+    return value.replace(/[^0-9]/g, "") || "0";
+  };
 
   const handleChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (
+      name === "income" ||
+      name === "installment" ||
+      name === "kreditBerjalan" ||
+      name === "jumlahKreditDiajukan"
+    ) {
+      // Ambil hanya angka dari input
+      const numericValue = parseRupiah(value);
+      // Update formData dengan nilai numerik
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue,
+      }));
+      // Update formattedValues dengan nilai yang diformat
+      setFormattedValues((prev) => ({
+        ...prev,
+        [name]: formatRupiah(numericValue),
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const isStepValid = () => {
@@ -226,8 +278,8 @@ export default function MultiStepForm() {
     const customerRequest: CustomerRequest = {
       username: formData["username"],
       job: formData["job"],
-      income: parseFloat(formData["income"]),
-      installment: parseFloat(formData["installment"]),
+      income: parseFloat(parseRupiah(formData["income"])),
+      installment: parseFloat(parseRupiah(formData["installment"])),
       age: parseFloat(formData["age"]),
       marital_status: formData["marital_status"],
       length_of_work: formData["length_of_work"],
@@ -239,6 +291,12 @@ export default function MultiStepForm() {
 
     try {
       const res = await submitForm(customerRequest);
+      setCustomerResponse(() => ({
+        score: res.data.score,
+        status: res.data.status,
+        describe: res.data.describe,
+      }));
+      setScoreStatus(!scoreStatus);
       console.log(res);
     } catch (error) {
       console.error(error);
@@ -247,14 +305,45 @@ export default function MultiStepForm() {
 
   const step = steps[currentStep];
 
-  return (
-    <div className="w-full  p-8 px-16 text-black">
+  return scoreStatus ? (
+    <div className="flex md:px-20 px-4 fixed bottom-0 left-0 w-full h-4/5 md:h-3/4">
+      <div className="w-full flex flex-col md:p-12 p-4 h-full gap-14 bg-[var(--pink-background)] rounded-t-lg text-black">
+        <div className="flex flex-col md:flex-row w-full h-full bg-white md:p-0 p-4 rounded-xl">
+          <div className="flex justify-center items-center w-full h-1/5 md:h-full">
+            <GaugeChart score={customerResponse.score} hight={400}></GaugeChart>
+          </div>
+          <div className="text-5xl font-medium w-full mt-6 md:mt-0 text-[var(--green)] h-full flex flex-col pt-20">
+            <div className="md:text-3xl text-lg font-bold text-[var(--green)]">
+              Penjelasan
+            </div>
+            <div className="text-lg font-medium text-wrap mt-5 text-black md:px-4">
+              {customerResponse.describe}
+            </div>
+            <div className="flex mb-10 mt-auto w-full">
+              <button
+                onClick={() => router.push("/database")}
+                className="px-5 py-2 text-base ms-auto me-10 md:text-xl rounded-md cursor-pointer bg-[var(--green-button)] text-white hover:bg-[var(--green)]">
+                Oke
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className="w-full p-8 md:px-16 text-black">
       <h2 className="text-xl font-semibold mb-6 text-[var(--pink)]">
         {step.title}
       </h2>
 
       {step.fields.map((field) => {
-        const value = formData[field.name] || "";
+        const value =
+          field.name === "income" ||
+          field.name === "installment" ||
+          field.name === "kreditBerjalan" ||
+          field.name === "jumlahKreditDiajukan"
+            ? formattedValues[field.name] || ""
+            : formData[field.name] || "";
         return (
           <div key={field.name} className="mb-4">
             <label className="block text-[var(--green)] mb-1 font-semibold">
@@ -268,7 +357,7 @@ export default function MultiStepForm() {
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 className={`${
                   value == "" ? "text-gray-500" : "text-black"
-                } w-full outline outline-[var(--pink)] focus:outline-2 rounded-lg px-4 py-2  ${
+                } w-full outline outline-[var(--pink)] md:min-h-10 h-10 focus:outline-2 rounded-lg px-4 py-2  ${
                   showError ? "border-red-500" : ""
                 }`}>
                 <option value="" className={`text-gray-500 rounded-lg`}>
@@ -291,7 +380,14 @@ export default function MultiStepForm() {
               </div>
             ) : (
               <input
-                type={field.type}
+                type={
+                  field.name === "income" ||
+                  field.name === "installment" ||
+                  field.name === "kreditBerjalan" ||
+                  field.name === "jumlahKreditDiajukan"
+                    ? "text"
+                    : field.type
+                }
                 placeholder={field.placeholder}
                 value={value}
                 onChange={(e) => handleChange(field.name, e.target.value)}
@@ -327,8 +423,8 @@ export default function MultiStepForm() {
             disabled={!isStepValid()}
             className={`px-4 py-2 rounded-md ${
               !isStepValid()
-                ? "bg-blue-300 cursor-not-allowed"
-                : "cursor-pointer bg-[var(--green)] text-white"
+                ? "bg-[var(--green-disable)] cursor-not-allowed"
+                : "cursor-pointer bg-[var(--green-button)] text-white hover:bg-[var(--green)]"
             }`}>
             Cek skor
           </button>
